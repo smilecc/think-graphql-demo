@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blog - Think GraphQL</title>
+    <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container" id="app">
+        <div id="createModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">新增文章</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form class="form-horizontal">
+                            <div class="form-group">
+                                <label for="inputTitle" class="col-sm-2 control-label">标题</label>
+                                <div class="col-sm-10">
+                                    <input class="form-control" id="inputTitle" placeholder="标题" v-model="form.title">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="inputTitle" class="col-sm-2 control-label">作者</label>
+                                <div class="col-sm-10">
+                                    <input class="form-control" id="inputTitle" placeholder="作者" v-model="form.author">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="inputContent" class="col-sm-2 control-label">内容</label>
+                                <div class="col-sm-10">
+                                    <textarea class="form-control" rows="5" v-model="form.content"></textarea>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-primary" @click="onSavePost">保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="header">
+            <h3 class="text-muted">Think GraphQL Blog</h3>
+        </div>
+
+        <div class="jumbotron">
+            <h1>Blog</h1>
+            <p class="lead">使用 Think GraphQL 所构建的简易博客实例。</p>
+            <p><a class="btn btn-lg btn-success" href="https://github.com/smilecc/think-graphql" role="button">了解更多</a></p>
+        </div>
+
+        <div class="row">
+            <button class="btn btn-primary" @click="showCreateModal">创建文章</button>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th width="60">#</th>
+                        <th width="100">作者</th>
+                        <th>标题</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item, index) in posts" :key="index">
+                        <th scope="row">{{ item.id }}</th>
+                        <td>{{ item.author }}</td>
+                        <td><a href="#" @click="onTitleClick(item)">{{ item.title }}</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer class="footer">
+            <p>Power by <a href="https://github.com/smilecc/think-graphql">think-graphql</a>.</p>
+        </footer>
+
+    </div>
+
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdn.bootcss.com/vue/2.5.17-beta.0/vue.min.js"></script>
+
+    <script>
+        $(function () {
+            const app = new Vue({
+                el: '#app',
+                data: {
+                    posts: [],
+                    form: {
+                        title: '',
+                        author: '',
+                        content: ''
+                    }
+                },
+                mounted() {
+                    this.loadPage().then(response => this.posts = response.data.posts)
+                },
+                methods: {
+                    showCreateModal() {
+                        $('#createModal').modal('show')
+                    },
+                    onTitleClick(post) {
+                        window.alert(post.content)
+                    },
+                    onSavePost() {
+                        this.createPost(this.form.author, this.form.title, this.form.content)
+                    },
+                    // 加载页面数据
+                    loadPage(page = 1) {
+                        return new Promise((resolve, reject) => {
+                            $.ajax({
+                                url: '/api/blog',
+                                method: 'post',
+                                contentType: 'application/json',
+                                data: JSON.stringify({
+                                    query: `
+                                        query getPosts($page: Int) {
+                                            posts(page: $page) {
+                                                id
+                                                author
+                                                title
+                                                content
+                                            }
+                                        }
+                                    `,
+                                    variables: {
+                                        page
+                                    }
+                                }),
+                                success: response => resolve(response),
+                                error: error => reject(error)
+                            })
+                        })
+                    },
+                    // 创建文章
+                    createPost(author, title, content) {
+                        $.ajax({
+                            url: '/api/blog',
+                            method: 'post',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                query: `
+                                    mutation createPost($post: PostInputType) {
+                                        post {
+                                            create(post: $post) {
+                                                code
+                                                message
+                                                postId
+                                            }
+                                        }
+                                    }
+                                `,
+                                variables: {
+                                    post: {
+                                        author,
+                                        title,
+                                        content
+                                    }
+                                }
+                            }),
+                            success: response => {
+                                window.alert(response.data.post.create.message)
+                                this.loadPage().then(response => this.posts = response.data
+                                    .posts)
+                                $('#createModal').modal('hide')
+                            }
+                        })
+                    }
+                }
+            })
+        })
+    </script>
+</body>
+
+</html>
