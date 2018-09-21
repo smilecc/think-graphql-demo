@@ -26,3 +26,5 @@ Document root is: D:\code\temp\think-graphql-demo\public
 ```
 
 随后在浏览器中打开[127.0.0.1:8000](http://127.0.0.1:8000/)即可看到示例页面。
+
+![](https://raw.githubusercontent.com/smilecc/think-graphql-demo/master/screenshot.jpg)
